@@ -1,0 +1,122 @@
+---
+title: "Misura del filtrato glomerulare (mGFR) con ioexolo"
+subtitle: "Report di calcolo"
+params:
+  inp: NULL
+  dir_app: "."
+output:
+  html_document:
+    self_contained: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+eval(parse(file.path(params$dir_app, "R", "calcoli.R"), encoding = "UTF-8"))
+eval(parse(file.path(params$dir_app, "R", "grafico.R"), encoding = "UTF-8"))
+inp <- params$inp
+r   <- calcola_tutto(inp)
+mg  <- r$mgfr
+kab <- function(df, ...) knitr::kable(df, row.names = FALSE, ...)
+d   <- function(x) { x <- come_data(x); if (is.na(x)) "—" else format(x, "%d/%m/%Y") }
+txt <- function(x) if (is.null(x) || length(x) == 0 || is.na(x) || !nzchar(trimws(x))) "—" else x
+```
+
+**Data report:** `r format(Sys.Date(), "%d/%m/%Y")` &nbsp;&nbsp; **Data prelievo:** `r d(inp$data_prelievo)` &nbsp;&nbsp; **N. richiesta:** `r txt(inp$richiesta)`
+
+## Paziente
+
+```{r}
+kab(data.frame(
+  Voce = c("Cognome e nome", "Sesso", "Data di nascita", "Età al prelievo",
+           "Peso", "Altezza", "BSA (Gehan & George)"),
+  Valore = c(txt(trimws(paste(inp$cognome, inp$nome))), txt(inp$sesso), d(inp$data_nascita),
+             if (is.na(r$eta)) "—" else paste(r$eta, "anni"), paste(fmt(inp$peso), "kg"),
+             paste(fmt(inp$altezza, 0), "cm"), paste(fmt(r$bsa, 3), "m²"))))
+```
+
+**Quesito clinico:** `r txt(inp$quesito)`
+
+## Risultati
+
+```{r}
+tr <- tabella_risultati(r)
+tr$Valore <- fmt(tr$Valore)
+tr$`Classe KDIGO` <- c("", vapply(tabella_risultati(r)$Valore[-1], classe_kdigo, ""))
+tr$`Classe KDIGO`[is.na(tr$`Classe KDIGO`)] <- ""
+kab(tr, col.names = c("Metodo", "Valore", "Unità", "Classe KDIGO"), align = "lrll")
+```
+
+```{r, results='asis'}
+msg <- c(mg$errori, if (is.na(r$eta)) "Età non calcolabile: inserire data di nascita e data prelievo.",
+         mg$avvisi, r$avvisi_egfr)
+if (length(msg)) cat(paste0("> **Attenzione:** ", msg, collapse = "\n>\n"), "\n")
+```
+
+## Dati della misura con ioexolo
+
+```{r}
+pp <- mg$punti
+tab_p <- data.frame(
+  Prelievo = c("T0 (iniezione)", pp$prelievo),
+  Ora = c(txt(inp$t0), ifelse(is.na(pp$ora) | pp$ora == "", "—", pp$ora)),
+  `Minuti da T0` = c("0", ifelse(is.na(pp$t_min), "—", fmt(pp$t_min, 0))),
+  `Ioexolo (mg/L)` = c("—", fmt(pp$conc, 2)),
+  `Ioexolo (µmol/L)` = c("—", fmt(pp$conc_umol, 2)),
+  `ln(C)` = c("—", fmt(pp$ln_conc, 4)),
+  Utilizzato = c("", ifelse(pp$usato, "sì", "no")),
+  check.names = FALSE)
+kab(tab_p, align = "llrrrrc")
+```
+
+Dose iniettata: **`r fmt(inp$dose_ug / 1000, 1)` mg** di ioexolo (`r fmt(inp$dose_ug, 0)` µg).
+
+```{r, fig.width=7, fig.height=4.2}
+if (is.null(mg$c0)) invisible() else grafico_decadimento(mg)
+```
+
+## Passaggi del calcolo
+
+```{r, results='asis'}
+if (length(mg$errori) == 0 && !is.null(mg$c0)) {
+  cat(sprintf(
+"1. **Regressione log-lineare** di ln(C) sul tempo con %d prelievi: intercetta ln(C0) = %s, pendenza = %s min⁻¹%s.
+2. **C0** = e^(intercetta) = **%s mg/L**; costante di eliminazione k = |pendenza| = %s min⁻¹ (emivita %s min).
+3. **AUC** = C0 / k = %s mg·min/L.
+4. **Clearance plasmatica (slope-intercept)** CL = Dose / AUC = %s / %s = **%s mL/min**.
+5. **Correzione di Brøchner-Mortensen** (formulazione originale, sulla clearance assoluta): GFR = 0,990778 · CL − 0,001218 · CL² = **%s mL/min**.
+6. **Normalizzazione** a 1,73 m² dopo la correzione: mGFR = GFR × 1,73 / BSA = %s × 1,73 / %s = **%s mL/min/1,73 m²**.\n",
+    mg$n_punti, fmt(mg$ln_c0, 4), formatC(mg$pendenza, format = "e", digits = 4, decimal.mark = ","),
+    if (is.na(mg$r2)) "" else sprintf(", R² = %s", fmt(mg$r2, 4)),
+    fmt(mg$c0, 2), formatC(mg$k, format = "e", digits = 4, decimal.mark = ","), fmt(mg$emivita_min, 0),
+    fmt(mg$auc, 0), fmt(inp$dose_ug, 0), fmt(mg$auc, 0),
+    fmt(mg$cl, 1), fmt(mg$gfr_abs, 1), fmt(mg$gfr_abs, 1), fmt(r$bsa, 3), fmt(mg$gfr_norm, 1)))
+} else cat("Calcolo della mGFR non eseguibile: vedere gli avvisi sopra.\n")
+```
+
+### eGFR
+
+```{r}
+ec <- r$ekfc_cr; ey <- r$ekfc_cys
+kab(data.frame(
+  Equazione = c("EKFC creatinina", "EKFC cistatina C", "EKFC combinata",
+                "CKD-EPI 2021 creatinina", "CKD-EPI 2021 creatinina + cistatina C"),
+  Input = c(sprintf("Scr %s mg/dL, sesso %s, età %s", fmt(inp$scr, 2), txt(inp$sesso), fmt(r$eta, 0)), sprintf("CysC %s mg/L, età %s", fmt(inp$scys, 2), fmt(r$eta, 0)),
+            "media aritmetica EKFC-cr ed EKFC-cys",
+            sprintf("Scr %s mg/dL, sesso %s, età %s", fmt(inp$scr, 2), txt(inp$sesso), fmt(r$eta, 0)),
+            sprintf("Scr %s mg/dL, CysC %s mg/L, sesso %s, età %s", fmt(inp$scr, 2), fmt(inp$scys, 2), txt(inp$sesso), fmt(r$eta, 0))),
+  Parametri = c(
+    if (is.null(ec)) "—" else sprintf("Q = %s; Scr/Q = %s; α = %s", fmt(ec$q, 2), fmt(ec$ratio, 3), fmt(ec$alfa, 3)),
+    if (is.null(ey)) "—" else sprintf("Q = %s; CysC/Q = %s; α = %s", fmt(ey$q, 3), fmt(ey$ratio, 3), fmt(ey$alfa, 3)),
+    "", "κ = 0,7 (F) / 0,9 (M)", "κ = 0,7 (F) / 0,9 (M); CysC/0,8"),
+  `eGFR (mL/min/1,73 m²)` = fmt(c(if (is.null(ec)) NA else ec$egfr, if (is.null(ey)) NA else ey$egfr,
+                                       r$ekfc_crcys, r$ckdepi_cr, r$ckdepi_crcys)),
+  check.names = FALSE), align = "lllr")
+```
+
+## Note metodologiche
+
+- **mGFR**: clearance plasmatica dello ioexolo con metodo *slope-intercept* (modello monocompartimentale sui prelievi tardivi), corretta con l'equazione di Brøchner-Mortensen (1972) applicata alla clearance assoluta, con normalizzazione a 1,73 m² dopo la correzione. BSA secondo Gehan & George (1970). Conversione ioexolo: µmol/L = mg/L × 1000 / 821,14 (peso molecolare 821,14 g/mol).
+- **EKFC**: 107,3 × (X/Q)^α × 0,990^(età−40) [solo se età > 40]; α = −0,322 se X/Q < 1, altrimenti −1,132. Q creatinina adulti: 0,90 mg/dL (M), 0,70 mg/dL (F); Q cistatina C: 0,83 mg/L (< 50 anni), 0,83 + 0,005 × (età − 50) (≥ 50 anni). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
+- **CKD-EPI 2021** (senza coefficiente razziale): Inker et al., *N Engl J Med* 2021.
+- Creatinina IDMS-tracciabile; cistatina C tracciabile allo standard IFCC (ERM-DA471/IFCC).
