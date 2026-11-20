@@ -1,0 +1,123 @@
+---
+title: "Glomerular filtration rate measurement (mGFR) with iohexol"
+subtitle: "Calculation report"
+params:
+  inp: NULL
+  app_dir: "."
+output:
+  html_document:
+    self_contained: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+eval(parse(file.path(params$app_dir, "R", "calculations.R"), encoding = "UTF-8"))
+eval(parse(file.path(params$app_dir, "R", "plot.R"), encoding = "UTF-8"))
+inp <- params$inp
+r   <- calc_all(inp)
+mg  <- r$mgfr
+kab <- function(df, ...) knitr::kable(df, row.names = FALSE, ...)
+d   <- function(x) { x <- as_date_safe(x); if (is.na(x)) "—" else format(x, "%Y-%m-%d") }
+txt <- function(x) if (is.null(x) || length(x) == 0 || is.na(x) || !nzchar(trimws(x))) "—" else x
+```
+
+**Report date:** `r format(Sys.Date(), "%Y-%m-%d")` &nbsp;&nbsp; **Sampling date:** `r d(inp$sample_date)` &nbsp;&nbsp; **Request no.:** `r txt(inp$request_id)`
+
+## Patient
+
+```{r}
+kab(data.frame(
+  Item = c("Surname and first name", "Sex", "Date of birth", "Age at sampling",
+           "Weight", "Height", "BSA (Gehan & George)"),
+  Value = c(txt(trimws(paste(inp$surname, inp$first_name))), txt(inp$sex), d(inp$birth_date),
+            if (is.na(r$age)) "—" else paste(r$age, "years"), paste(fmt(inp$weight), "kg"),
+            paste(fmt(inp$height, 0), "cm"), paste(fmt(r$bsa, 3), "m²"))))
+```
+
+**Clinical question:** `r txt(inp$clinical_question)`
+
+## Results
+
+```{r}
+tr <- results_table(r)
+tr$Value <- fmt(tr$Value)
+tr$`KDIGO category` <- c("", vapply(results_table(r)$Value[-1], kdigo_category, ""))
+tr$`KDIGO category`[is.na(tr$`KDIGO category`)] <- ""
+kab(tr, col.names = c("Method", "Value", "Unit", "KDIGO category"), align = "lrll")
+```
+
+```{r, results='asis'}
+msg <- c(mg$errors, if (is.na(r$age)) "Age cannot be calculated: enter date of birth and sampling date.",
+         mg$warnings, r$egfr_warnings)
+if (length(msg)) cat(paste0("> **Warning:** ", msg, collapse = "\n>\n"), "\n")
+```
+
+## Iohexol measurement data
+
+```{r}
+pp <- mg$points
+tab_p <- data.frame(
+  Sample = c("T0 (injection)", pp$sample),
+  Time = c(txt(inp$t0), ifelse(is.na(pp$time) | pp$time == "", "—", pp$time)),
+  `Minutes from T0` = c("0", ifelse(is.na(pp$t_min), "—", fmt(pp$t_min, 0))),
+  `Iohexol (mg/L)` = c("—", fmt(pp$conc, 2)),
+  `Iohexol (µmol/L)` = c("—", fmt(pp$conc_umol, 2)),
+  `ln(C)` = c("—", fmt(pp$ln_conc, 4)),
+  Used = c("", ifelse(pp$used, "yes", "no")),
+  check.names = FALSE)
+kab(tab_p, align = "llrrrrc")
+```
+
+Injected dose: **`r fmt(inp$dose_ug / 1000, 1)` mg** of iohexol (`r fmt(inp$dose_ug, 0)` µg).
+
+```{r, fig.width=7, fig.height=4.2}
+if (is.null(mg$c0)) invisible() else decay_plot(mg)
+```
+
+## Calculation steps
+
+```{r, results='asis'}
+if (length(mg$errors) == 0 && !is.null(mg$c0)) {
+  cat(sprintf(
+"1. **Log-linear regression** of ln(C) on time with %d samples: intercept ln(C0) = %s, slope = %s min⁻¹%s.
+2. **C0** = e^(intercept) = **%s mg/L**; elimination rate constant k = |slope| = %s min⁻¹ (half-life %s min).
+3. **AUC** = C0 / k = %s mg·min/L.
+4. **Plasma clearance (slope-intercept)** CL = Dose / AUC = %s / %s = **%s mL/min**.
+5. **Brøchner-Mortensen correction** (original formulation, on the absolute clearance): GFR = 0.990778 · CL − 0.001218 · CL² = **%s mL/min**.
+6. **Normalisation** to 1.73 m² after the correction: mGFR = GFR × 1.73 / BSA = %s × 1.73 / %s = **%s mL/min/1.73 m²**.\n",
+    mg$n_points, fmt(mg$ln_c0, 4), formatC(mg$slope, format = "e", digits = 4),
+    if (is.na(mg$r2)) "" else sprintf(", R² = %s", fmt(mg$r2, 4)),
+    fmt(mg$c0, 2), formatC(mg$k, format = "e", digits = 4), fmt(mg$half_life_min, 0),
+    fmt(mg$auc, 0), fmt(inp$dose_ug, 0), fmt(mg$auc, 0),
+    fmt(mg$cl, 1), fmt(mg$gfr_abs, 1), fmt(mg$gfr_abs, 1), fmt(r$bsa, 3), fmt(mg$gfr_norm, 1)))
+} else cat("mGFR cannot be calculated: see the warnings above.\n")
+```
+
+### eGFR
+
+```{r}
+ec <- r$ekfc_cr; ey <- r$ekfc_cys
+kab(data.frame(
+  Equation = c("EKFC creatinine", "EKFC cystatin C", "EKFC combined",
+               "CKD-EPI 2021 creatinine", "CKD-EPI 2021 creatinine + cystatin C"),
+  Input = c(sprintf("Scr %s mg/dL, sex %s, age %s", fmt(inp$scr, 2), txt(inp$sex), fmt(r$age, 0)),
+            sprintf("CysC %s mg/L, age %s", fmt(inp$scys, 2), fmt(r$age, 0)),
+            "arithmetic mean of EKFC-cr and EKFC-cys",
+            sprintf("Scr %s mg/dL, sex %s, age %s", fmt(inp$scr, 2), txt(inp$sex), fmt(r$age, 0)),
+            sprintf("Scr %s mg/dL, CysC %s mg/L, sex %s, age %s", fmt(inp$scr, 2), fmt(inp$scys, 2), txt(inp$sex), fmt(r$age, 0))),
+  Parameters = c(
+    if (is.null(ec)) "—" else sprintf("Q = %s; Scr/Q = %s; α = %s", fmt(ec$q, 2), fmt(ec$ratio, 3), fmt(ec$alpha, 3)),
+    if (is.null(ey)) "—" else sprintf("Q = %s; CysC/Q = %s; α = %s", fmt(ey$q, 3), fmt(ey$ratio, 3), fmt(ey$alpha, 3)),
+    "", "κ = 0.7 (F) / 0.9 (M)", "κ = 0.7 (F) / 0.9 (M); CysC/0.8"),
+  `eGFR (mL/min/1.73 m²)` = fmt(c(if (is.null(ec)) NA else ec$egfr, if (is.null(ey)) NA else ey$egfr,
+                                  r$ekfc_crcys, r$ckdepi_cr, r$ckdepi_crcys)),
+  check.names = FALSE), align = "lllr")
+```
+
+## Methodological notes
+
+- **mGFR**: plasma clearance of iohexol by the *slope-intercept* method (one-compartment model on late samples), corrected with the Brøchner-Mortensen equation (1972) applied to the absolute clearance, with normalisation to 1.73 m² after the correction. BSA according to Gehan & George (1970). Iohexol conversion: µmol/L = mg/L × 1000 / 821.14 (molecular weight 821.14 g/mol).
+- **EKFC**: 107.3 × (X/Q)^α × 0.990^(age−40) [only if age > 40]; α = −0.322 if X/Q < 1, otherwise −1.132. Adult creatinine Q: 0.90 mg/dL (M), 0.70 mg/dL (F); cystatin C Q: 0.83 mg/L (< 50 years), 0.83 + 0.005 × (age − 50) (≥ 50 years). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
+- **CKD-EPI 2021** (without race coefficient): Inker et al., *N Engl J Med* 2021.
+- IDMS-traceable creatinine; cystatin C traceable to the IFCC standard (ERM-DA471/IFCC).
