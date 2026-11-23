@@ -1,7 +1,7 @@
 # =============================================================================
 # App Shiny - mGFR con ioexolo ed eGFR (EKFC, CKD-EPI 2021)
 # Avvio locale (senza RStudio):  Rscript -e 'shiny::runApp("it", port = 3838)'
-# Pubblicazione su Shiny Server: vedere PUBBLICAZIONE.md nella radice del repository
+# Pubblicazione su Shiny Server: vedere la cartella deploy/ nella radice del repository
 # Pacchetti richiesti: shiny, bslib (>= 0.5), rmarkdown, knitr
 # Il report HTML viene generato da rmarkdown, che richiede pandoc installato
 # =============================================================================

@@ -4,6 +4,10 @@ Shiny app for measured GFR (mGFR) with iohexol (slope-intercept + Brøchner-Mort
 (EKFC, CKD-EPI 2021), with a downloadable HTML report.
 App Shiny per la misura del filtrato glomerulare (mGFR) con ioexolo ed eGFR, con report HTML.
 
+> **Avvertenza.** Strumento di calcolo a scopo di supporto e ricerca: non è un dispositivo medico marcato CE (Regolamento UE 2017/745). I risultati devono essere verificati e interpretati da personale qualificato. Software fornito senza alcuna garanzia (vedi licenza).
+>
+> **Disclaimer.** Calculation tool for support and research purposes: it is not a CE-marked medical device (EU Regulation 2017/745). Results must be verified and interpreted by qualified personnel. Software provided without any warranty (see licence).
+
 Copyright (C) 2026 Davide Negrini – distribuito con licenza GNU AGPL v3, vedi [LICENSE](LICENSE)
 
 | Cartella / Folder | Contenuto / Content |
