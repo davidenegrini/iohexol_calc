@@ -10,7 +10,6 @@ Copyright (C) 2026 Davide Negrini – distribuito con licenza GNU AGPL v3, vedi 
 |---|---|
 | [`it/`](it/) | Versione italiana – vedi [`it/LEGGIMI.md`](it/LEGGIMI.md) |
 | [`en/`](en/) | English version – see [`en/README.md`](en/README.md) |
-| [`tests/`](tests/) | Test di formule e coerenza it/en – formula and it/en consistency tests |
 | [`deploy/`](deploy/) | Configurazione Shiny Server e installazione pacchetti – Shiny Server config and package installer |
 
 ## Avvio rapido / Quick start
