@@ -7,7 +7,7 @@
    (su Debian/Ubuntu: `sudo apt install pandoc`). RStudio lo include già, ma RStudio **non** è necessario.
 3. Avvio locale da terminale, dalla radice del repository:
    `Rscript -e 'shiny::runApp("it", port = 3838, launch.browser = TRUE)'`
-4. Pubblicazione su un server Shiny: vedere [`../PUBBLICAZIONE.md`](../PUBBLICAZIONE.md).
+4. Pubblicazione su un server Shiny.
 
 ## Struttura
 - `app.R` – interfaccia e logica Shiny
@@ -15,8 +15,7 @@
 - `R/grafico.R` – grafico della curva di decadimento
 - `report.Rmd` – modello del report (HTML)
 
-La versione inglese (`../en/`) usa le stesse formule e costanti; `tests/test_formule.R`
-verifica che le due versioni diano risultati identici.
+La versione inglese (`../en/`) usa le stesse formule e costanti.
 
 ## Scelte di calcolo
 - mGFR slope-intercept; correzione di Brøchner-Mortensen (0,990778 · CL − 0,001218 · CL²) sulla clearance assoluta, poi normalizzazione a 1,73 m² (formulazione originale 1972).
