@@ -7,7 +7,7 @@
    (Debian/Ubuntu: `sudo apt install pandoc`). RStudio bundles it, but RStudio is **not** required.
 3. Local start from a terminal, in the repository root:
    `Rscript -e 'shiny::runApp("en", port = 3838, launch.browser = TRUE)'`
-4. Deployment on a Shiny server: see [`../DEPLOYMENT.md`](../DEPLOYMENT.md).
+4. Deployment on a Shiny server.
 
 ## Structure
 - `app.R` – Shiny user interface and server logic
@@ -15,8 +15,7 @@
 - `R/plot.R` – decay curve plot
 - `report.Rmd` – report template (HTML)
 
-The Italian version (`../it/`) uses the same formulas and constants; `tests/test_formule.R`
-checks that both versions give identical results.
+The Italian version (`../it/`) uses the same formulas and constants.
 
 ## Calculation choices
 - Slope-intercept mGFR; Brøchner-Mortensen correction (0.990778 · CL − 0.001218 · CL²) on the absolute clearance, then normalisation to 1.73 m² (original 1972 formulation).
