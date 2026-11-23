@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "Se usi questo software, per favore citalo come indicato. / If you use this software, please cite it as below."
-title: "iohexol_calc: Shiny app for measured GFR with iohexol and eGFR (EKFC, CKD-EPI 2021)"
+title: "iohexol_calc: Shiny app for measured GFR with iohexol and eGFR (EKFC)"
 type: software
 authors:
   - family-names: Negrini
@@ -13,5 +13,4 @@ keywords:
   - iohexol
   - eGFR
   - EKFC
-  - CKD-EPI
   - Shiny
