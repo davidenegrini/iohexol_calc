@@ -4,6 +4,8 @@ Shiny app for measured GFR (mGFR) with iohexol (slope-intercept + Brøchner-Mort
 (EKFC, CKD-EPI 2021), with a downloadable HTML report.
 App Shiny per la misura del filtrato glomerulare (mGFR) con ioexolo ed eGFR, con report HTML.
 
+Copyright (C) 2026 Davide Negrini – distribuito con licenza GNU AGPL v3, vedi [LICENSE](LICENSE)
+
 | Cartella / Folder | Contenuto / Content |
 |---|---|
 | [`it/`](it/) | Versione italiana – vedi [`it/LEGGIMI.md`](it/LEGGIMI.md) |
@@ -26,14 +28,3 @@ Rscript -e 'shiny::runApp("en", port = 3838, launch.browser = TRUE)'
 ```
 
 pandoc must be installed for the report (`sudo apt install pandoc`) – serve pandoc per il report.
-
-## Pubblicazione / Deployment
-
-- 🇮🇹 [PUBBLICAZIONE.md](PUBBLICAZIONE.md) – Shiny Server su Linux, senza RStudio
-- 🇬🇧 [DEPLOYMENT.md](DEPLOYMENT.md) – Shiny Server on Linux, no RStudio
-
-## Test
-
-```bash
-Rscript tests/test_formule.R
-```
