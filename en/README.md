@@ -1,5 +1,7 @@
 # Shiny app – mGFR with iohexol and eGFR (English version)
 
+> **Disclaimer.** Calculation tool for support and research purposes: it is not a CE-marked medical device (EU Regulation 2017/745). Results must be verified and interpreted by qualified personnel. Software provided without any warranty (see licence).
+
 ## Start
 1. Install the packages once: `install.packages(c("shiny", "bslib", "rmarkdown", "knitr"))`
    (bslib ≥ 0.5).
@@ -7,7 +9,8 @@
    (Debian/Ubuntu: `sudo apt install pandoc`). RStudio bundles it, but RStudio is **not** required.
 3. Local start from a terminal, in the repository root:
    `Rscript -e 'shiny::runApp("en", port = 3838, launch.browser = TRUE)'`
-4. Deployment on a Shiny server.
+4. Deployment on Shiny Server: example configuration in `../deploy/shiny-server.conf`,
+   package installation with `sudo Rscript deploy/install_packages.R`.
 
 ## Structure
 - `app.R` – Shiny user interface and server logic

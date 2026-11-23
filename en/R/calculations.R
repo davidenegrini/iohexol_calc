@@ -3,7 +3,7 @@
 # All functions are "pure": same inputs -> same outputs, no side effects.
 # They are used both by the Shiny app and by the report.
 # English translation of it/R/calcoli.R: formulas and constants MUST stay
-# identical (checked by tests/test_formule.R).
+# identical.
 # =============================================================================
 
 `%||%` <- function(a, b) if (is.null(a)) b else a

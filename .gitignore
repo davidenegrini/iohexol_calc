@@ -1,0 +1,13 @@
+# Sessione R (può contenere dati dei pazienti) / R session (may contain patient data)
+.Rhistory
+.RData
+.Rapp.history
+.Rproj.user/
+*.Rproj
+
+# Report generati / Generated reports
+*.html
+
+# Sistema operativo / OS
+.DS_Store
+Thumbs.db

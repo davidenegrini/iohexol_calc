@@ -120,3 +120,7 @@ kab(data.frame(
 - **EKFC**: 107,3 × (X/Q)^α × 0,990^(età−40) [solo se età > 40]; α = −0,322 se X/Q < 1, altrimenti −1,132. Q creatinina adulti: 0,90 mg/dL (M), 0,70 mg/dL (F); Q cistatina C: 0,83 mg/L (< 50 anni), 0,83 + 0,005 × (età − 50) (≥ 50 anni). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
 - **CKD-EPI 2021** (senza coefficiente razziale): Inker et al., *N Engl J Med* 2021.
 - Creatinina IDMS-tracciabile; cistatina C tracciabile allo standard IFCC (ERM-DA471/IFCC).
+
+---
+
+> **Avvertenza.** Strumento di calcolo a scopo di supporto e ricerca: non è un dispositivo medico marcato CE (Regolamento UE 2017/745). I risultati devono essere verificati e interpretati da personale qualificato.
