@@ -124,7 +124,7 @@ server <- function(input, output, session) {
 
   # ---- output a video ------------------------------------------------------
   output$box_avvisi <- renderUI({
-    r <- ris(); err <- r$mgfr$errori; avv <- c(r$mgfr$avvisi, r$avvisi_egfr)
+    r <- ris(); err <- c(r$mgfr$errori, r$errori_egfr); avv <- c(r$mgfr$avvisi, r$avvisi_egfr)
     if (is.na(r$eta)) err <- c(err, "Età non calcolabile: inserire data di nascita e data prelievo.")
     tagList(
       if (length(err)) div(class = "alert alert-danger", HTML(paste(err, collapse = "<br>"))),

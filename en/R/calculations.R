@@ -33,6 +33,14 @@ age_years <- function(birth_date, sample_date) {
   as.numeric(years)
 }
 
+#' Decimal age (days / 365.25) at the sampling date: used for EKFC, where the
+#' paediatric Q (2-25 years) changes noticeably within a year
+age_decimal <- function(birth_date, sample_date) {
+  birth_date <- as_date_safe(birth_date); sample_date <- as_date_safe(sample_date)
+  if (is.na(birth_date) || is.na(sample_date) || birth_date > sample_date) return(NA_real_)
+  as.numeric(sample_date - birth_date) / 365.25
+}
+
 #' BSA according to Gehan & George (1970), m^2
 bsa_gehan_george <- function(weight_kg, height_cm) {
   if (is.na(weight_kg) || is.na(height_cm) || weight_kg <= 0 || height_cm <= 0) return(NA_real_)
@@ -209,25 +217,39 @@ ckdepi2021_creat_cys <- function(scr, scys, sex, age) {
 #'  dose_ug, t0, times[5], conc[5])
 calc_all <- function(inp) {
   age <- age_years(inp$birth_date, inp$sample_date)
+  age_dec <- age_decimal(inp$birth_date, inp$sample_date)
   bsa <- bsa_gehan_george(inp$weight, inp$height)
   mg  <- calc_mgfr(inp$t0, inp$times, inp$conc, inp$dose_ug, bsa)
-  e_cr  <- if (!is.na(age)) ekfc_creat(inp$scr, inp$sex, age) else NULL
-  e_cys <- if (!is.na(age)) ekfc_cys(inp$scys, age) else NULL
+  if (!is.na(age) && age < 18)
+    mg$warnings <- c(mg$warnings, "Patient < 18 years: the Br\u00f8chner-Mortensen (1972) correction was derived in adults; in children mGFR may be less accurate.")
+  # laboratory values <= 0 are invalid: excluded from eGFR calculation
+  egfr_errors <- character(0)
+  if (isTRUE(inp$scr <= 0)) {
+    egfr_errors <- c(egfr_errors, "Creatinine <= 0 mg/dL: invalid value, creatinine-based eGFR not calculated.")
+    inp$scr <- NA_real_
+  }
+  if (isTRUE(inp$scys <= 0)) {
+    egfr_errors <- c(egfr_errors, "Cystatin C <= 0 mg/L: invalid value, cystatin C-based eGFR not calculated.")
+    inp$scys <- NA_real_
+  }
+  # EKFC with decimal age (paediatric Q and 0.990^(age-40) factor)
+  e_cr  <- if (!is.na(age_dec)) ekfc_creat(inp$scr, inp$sex, age_dec) else NULL
+  e_cys <- if (!is.na(age_dec)) ekfc_cys(inp$scys, age_dec) else NULL
   egfr_warnings <- character(0)
-  if (!is.na(age) && age < 2)
+  if (!is.na(age_dec) && age_dec < 2)
     egfr_warnings <- c(egfr_warnings, "Age < 2 years: the EKFC equation is not validated and is not calculated.")
-  else if (!is.na(age) && age <= 25)
+  else if (!is.na(age_dec) && age_dec <= 25)
     egfr_warnings <- c(egfr_warnings, sprintf("Age \u2264 25 years: EKFC creatinine calculated with age- and sex-dependent Q (Q = %.3f mg/dL).",
                                               if (is.null(e_cr)) NA_real_ else e_cr$q))
   if (!is.na(age) && age < 18)
     egfr_warnings <- c(egfr_warnings, "Paediatric patient: the CKD-EPI equations are not validated below 18 years.")
   list(
-    age = age, bsa = bsa, mgfr = mg,
+    age = age, age_dec = age_dec, bsa = bsa, mgfr = mg,
     ekfc_cr = e_cr, ekfc_cys = e_cys,
     ekfc_crcys = ekfc_combined(e_cr, e_cys),
     ckdepi_cr = if (!is.na(age)) ckdepi2021_creat(inp$scr, inp$sex, age) else NA_real_,
     ckdepi_crcys = if (!is.na(age)) ckdepi2021_creat_cys(inp$scr, inp$scys, inp$sex, age) else NA_real_,
-    egfr_warnings = egfr_warnings
+    egfr_warnings = egfr_warnings, egfr_errors = egfr_errors
   )
 }
 

@@ -124,7 +124,7 @@ server <- function(input, output, session) {
 
   # ---- on-screen output -----------------------------------------------------
   output$alerts_box <- renderUI({
-    r <- res(); err <- r$mgfr$errors; wrn <- c(r$mgfr$warnings, r$egfr_warnings)
+    r <- res(); err <- c(r$mgfr$errors, r$egfr_errors); wrn <- c(r$mgfr$warnings, r$egfr_warnings)
     if (is.na(r$age)) err <- c(err, "Age cannot be calculated: enter date of birth and sampling date.")
     tagList(
       if (length(err)) div(class = "alert alert-danger", HTML(paste(err, collapse = "<br>"))),

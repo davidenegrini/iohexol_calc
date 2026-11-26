@@ -48,7 +48,7 @@ kab(tr, col.names = c("Metodo", "Valore", "Unità", "Classe KDIGO"), align = "lr
 ```
 
 ```{r, results='asis'}
-msg <- c(mg$errori, if (is.na(r$eta)) "Età non calcolabile: inserire data di nascita e data prelievo.",
+msg <- c(mg$errori, r$errori_egfr, if (is.na(r$eta)) "Età non calcolabile: inserire data di nascita e data prelievo.",
          mg$avvisi, r$avvisi_egfr)
 if (length(msg)) cat(paste0("> **Attenzione:** ", msg, collapse = "\n>\n"), "\n")
 ```
@@ -101,7 +101,7 @@ ec <- r$ekfc_cr; ey <- r$ekfc_cys
 kab(data.frame(
   Equazione = c("EKFC creatinina", "EKFC cistatina C", "EKFC combinata",
                 "CKD-EPI 2021 creatinina", "CKD-EPI 2021 creatinina + cistatina C"),
-  Input = c(sprintf("Scr %s mg/dL, sesso %s, età %s", fmt(inp$scr, 2), txt(inp$sesso), fmt(r$eta, 0)), sprintf("CysC %s mg/L, età %s", fmt(inp$scys, 2), fmt(r$eta, 0)),
+  Input = c(sprintf("Scr %s mg/dL, sesso %s, età %s", fmt(inp$scr, 2), txt(inp$sesso), fmt(r$eta_dec, 2)), sprintf("CysC %s mg/L, età %s", fmt(inp$scys, 2), fmt(r$eta_dec, 2)),
             "media aritmetica EKFC-cr ed EKFC-cys",
             sprintf("Scr %s mg/dL, sesso %s, età %s", fmt(inp$scr, 2), txt(inp$sesso), fmt(r$eta, 0)),
             sprintf("Scr %s mg/dL, CysC %s mg/L, sesso %s, età %s", fmt(inp$scr, 2), fmt(inp$scys, 2), txt(inp$sesso), fmt(r$eta, 0))),
@@ -117,7 +117,7 @@ kab(data.frame(
 ## Note metodologiche
 
 - **mGFR**: clearance plasmatica dello ioexolo con metodo *slope-intercept* (modello monocompartimentale sui prelievi tardivi), corretta con l'equazione di Brøchner-Mortensen (1972) applicata alla clearance assoluta, con normalizzazione a 1,73 m² dopo la correzione. BSA secondo Gehan & George (1970). Conversione ioexolo: µmol/L = mg/L × 1000 / 821,14 (peso molecolare 821,14 g/mol).
-- **EKFC**: 107,3 × (X/Q)^α × 0,990^(età−40) [solo se età > 40]; α = −0,322 se X/Q < 1, altrimenti −1,132. Q creatinina: 2–25 anni ln(Q [µmol/L]) = 3,200 + 0,259·età − 0,543·ln(età) − 0,00763·età² + 0,0000790·età³ (M) e 3,080 + 0,177·età − 0,223·ln(età) − 0,00596·età² + 0,0000686·età³ (F), convertito in mg/dL (÷ 88,4); > 25 anni 0,90 mg/dL (M), 0,70 mg/dL (F); Q cistatina C: 0,83 mg/L (2–< 50 anni), 0,83 + 0,005 × (età − 50) (≥ 50 anni). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
+- **EKFC** (età decimale = giorni / 365,25): 107,3 × (X/Q)^α × 0,990^(età−40) [solo se età > 40]; α = −0,322 se X/Q < 1, altrimenti −1,132. Q creatinina: 2–25 anni ln(Q [µmol/L]) = 3,200 + 0,259·età − 0,543·ln(età) − 0,00763·età² + 0,0000790·età³ (M) e 3,080 + 0,177·età − 0,223·ln(età) − 0,00596·età² + 0,0000686·età³ (F), convertito in mg/dL (÷ 88,4); > 25 anni 0,90 mg/dL (M), 0,70 mg/dL (F); Q cistatina C: 0,83 mg/L (2–< 50 anni), 0,83 + 0,005 × (età − 50) (≥ 50 anni). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
 - **CKD-EPI 2021** (senza coefficiente razziale): Inker et al., *N Engl J Med* 2021.
 - Creatinina IDMS-tracciabile; cistatina C tracciabile allo standard IFCC (ERM-DA471/IFCC).
 
