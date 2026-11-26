@@ -106,7 +106,7 @@ kab(data.frame(
             sprintf("Scr %s mg/dL, sesso %s, età %s", fmt(inp$scr, 2), txt(inp$sesso), fmt(r$eta, 0)),
             sprintf("Scr %s mg/dL, CysC %s mg/L, sesso %s, età %s", fmt(inp$scr, 2), fmt(inp$scys, 2), txt(inp$sesso), fmt(r$eta, 0))),
   Parametri = c(
-    if (is.null(ec)) "—" else sprintf("Q = %s; Scr/Q = %s; α = %s", fmt(ec$q, 2), fmt(ec$ratio, 3), fmt(ec$alfa, 3)),
+    if (is.null(ec)) "—" else sprintf("Q = %s; Scr/Q = %s; α = %s", fmt(ec$q, 3), fmt(ec$ratio, 3), fmt(ec$alfa, 3)),
     if (is.null(ey)) "—" else sprintf("Q = %s; CysC/Q = %s; α = %s", fmt(ey$q, 3), fmt(ey$ratio, 3), fmt(ey$alfa, 3)),
     "", "κ = 0,7 (F) / 0,9 (M)", "κ = 0,7 (F) / 0,9 (M); CysC/0,8"),
   `eGFR (mL/min/1,73 m²)` = fmt(c(if (is.null(ec)) NA else ec$egfr, if (is.null(ey)) NA else ey$egfr,
@@ -117,7 +117,7 @@ kab(data.frame(
 ## Note metodologiche
 
 - **mGFR**: clearance plasmatica dello ioexolo con metodo *slope-intercept* (modello monocompartimentale sui prelievi tardivi), corretta con l'equazione di Brøchner-Mortensen (1972) applicata alla clearance assoluta, con normalizzazione a 1,73 m² dopo la correzione. BSA secondo Gehan & George (1970). Conversione ioexolo: µmol/L = mg/L × 1000 / 821,14 (peso molecolare 821,14 g/mol).
-- **EKFC**: 107,3 × (X/Q)^α × 0,990^(età−40) [solo se età > 40]; α = −0,322 se X/Q < 1, altrimenti −1,132. Q creatinina adulti: 0,90 mg/dL (M), 0,70 mg/dL (F); Q cistatina C: 0,83 mg/L (< 50 anni), 0,83 + 0,005 × (età − 50) (≥ 50 anni). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
+- **EKFC**: 107,3 × (X/Q)^α × 0,990^(età−40) [solo se età > 40]; α = −0,322 se X/Q < 1, altrimenti −1,132. Q creatinina: 2–25 anni ln(Q [µmol/L]) = 3,200 + 0,259·età − 0,543·ln(età) − 0,00763·età² + 0,0000790·età³ (M) e 3,080 + 0,177·età − 0,223·ln(età) − 0,00596·età² + 0,0000686·età³ (F), convertito in mg/dL (÷ 88,4); > 25 anni 0,90 mg/dL (M), 0,70 mg/dL (F); Q cistatina C: 0,83 mg/L (2–< 50 anni), 0,83 + 0,005 × (età − 50) (≥ 50 anni). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
 - **CKD-EPI 2021** (senza coefficiente razziale): Inker et al., *N Engl J Med* 2021.
 - Creatinina IDMS-tracciabile; cistatina C tracciabile allo standard IFCC (ERM-DA471/IFCC).
 

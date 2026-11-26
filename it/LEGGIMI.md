@@ -30,6 +30,6 @@ La versione inglese (`../en/`) usa le stesse formule e costanti.
 - Report solo in HTML (stampabile in PDF dal browser).
 
 ## Cose da ricordare per il futuro
-- EKFC creatinina usa il Q adulto fisso: per età < 25 anni servirebbe il Q dipendente dall'età (l'app mostra un avviso).
+- EKFC creatinina: per 2–25 anni usa il Q dipendente da età e sesso (Pottel et al., *Ann Intern Med* 2021), oltre i 25 anni il Q adulto fisso; sotto i 2 anni EKFC non viene calcolata.
 - Controlli di qualità attivi: numero di prelievi, R², primo prelievo < 110 min, prelievi incompleti, concentrazioni ≤ 0.
 - Il calcolo dei minuti non gestisce il passaggio della mezzanotte (un prelievo dopo le 24:00 risulta "precedente a T0" e blocca il calcolo).

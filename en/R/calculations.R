@@ -140,17 +140,34 @@ calc_mgfr <- function(t0, times, conc, dose_ug, bsa) {
   list(egfr = egfr, alpha = alpha)
 }
 
-#' EKFC creatinine (fixed adult Q: 0.90 mg/dL M, 0.70 mg/dL F; valid >= 25 years)
+#' EKFC creatinine Q (mg/dL) as a function of sex and age.
+#' 2-25 years: Pottel et al. Ann Intern Med 2021 polynomials (Q in umol/L,
+#' converted to mg/dL by dividing by 88.4); > 25 years: fixed adult Q
+#' (80 umol/L = 0.90 mg/dL M; 62 umol/L = 0.70 mg/dL F).
+#' Returns NA below 2 years (outside the EKFC validity range).
+ekfc_q_creat <- function(sex, age) {
+  if (is.na(age) || age < 2) return(NA_real_)
+  if (age > 25) return(if (sex == "M") 0.90 else 0.70)
+  ln_q <- if (sex == "M")
+    3.200 + 0.259 * age - 0.543 * log(age) - 0.00763 * age^2 + 0.0000790 * age^3
+  else
+    3.080 + 0.177 * age - 0.223 * log(age) - 0.00596 * age^2 + 0.0000686 * age^3
+  exp(ln_q) / 88.4
+}
+
+#' EKFC creatinine (age-dependent Q for 2-25 years, fixed adult Q above; valid 2-100 years)
 ekfc_creat <- function(scr, sex, age) {
   if (any(is.na(c(scr, age))) || is.null(sex) || !sex %in% c("M", "F")) return(NULL)
-  q <- if (sex == "M") 0.90 else 0.70
+  q <- ekfc_q_creat(sex, age)
+  if (is.na(q)) return(NULL)
   x <- scr / q; r <- .ekfc_core(x, age)
   list(q = q, ratio = x, alpha = r$alpha, egfr = r$egfr)
 }
 
-#' EKFC cystatin C (Q = 0.83 mg/L if < 50 years, 0.83 + 0.005*(age-50) if >= 50)
+#' EKFC cystatin C (Q = 0.83 mg/L from 2 to < 50 years, sex-independent;
+#' 0.83 + 0.005*(age-50) if >= 50)
 ekfc_cys <- function(scys, age) {
-  if (any(is.na(c(scys, age)))) return(NULL)
+  if (any(is.na(c(scys, age))) || age < 2) return(NULL)
   q <- if (age < 50) 0.83 else 0.83 + 0.005 * (age - 50)
   x <- scys / q; r <- .ekfc_core(x, age)
   list(q = q, ratio = x, alpha = r$alpha, egfr = r$egfr)
@@ -197,8 +214,11 @@ calc_all <- function(inp) {
   e_cr  <- if (!is.na(age)) ekfc_creat(inp$scr, inp$sex, age) else NULL
   e_cys <- if (!is.na(age)) ekfc_cys(inp$scys, age) else NULL
   egfr_warnings <- character(0)
-  if (!is.na(age) && age < 25)
-    egfr_warnings <- c(egfr_warnings, "Age < 25 years: EKFC here uses the fixed adult Q; for age < 25 years EKFC requires an age-dependent Q.")
+  if (!is.na(age) && age < 2)
+    egfr_warnings <- c(egfr_warnings, "Age < 2 years: the EKFC equation is not validated and is not calculated.")
+  else if (!is.na(age) && age <= 25)
+    egfr_warnings <- c(egfr_warnings, sprintf("Age \u2264 25 years: EKFC creatinine calculated with age- and sex-dependent Q (Q = %.3f mg/dL).",
+                                              if (is.null(e_cr)) NA_real_ else e_cr$q))
   if (!is.na(age) && age < 18)
     egfr_warnings <- c(egfr_warnings, "Paediatric patient: the CKD-EPI equations are not validated below 18 years.")
   list(

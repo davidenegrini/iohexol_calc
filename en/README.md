@@ -31,6 +31,6 @@ The Italian version (`../it/`) uses the same formulas and constants.
 - HTML report only (can be printed to PDF from the browser).
 
 ## Known limitations
-- EKFC creatinine uses the fixed adult Q: for age < 25 years an age-dependent Q is required (the app shows a warning).
+- EKFC creatinine: for 2–25 years it uses the age- and sex-dependent Q (Pottel et al., *Ann Intern Med* 2021), above 25 years the fixed adult Q; below 2 years EKFC is not calculated.
 - Active quality checks: number of samples, R², first sample < 110 min, incomplete samples, concentrations ≤ 0.
 - Minute calculation does not handle crossing midnight (a sample after 24:00 appears "earlier than T0" and blocks the calculation).
