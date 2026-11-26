@@ -31,6 +31,14 @@ eta_anni <- function(data_nascita, data_prelievo) {
   as.numeric(anni)
 }
 
+#' Eta' decimale (giorni / 365,25) alla data del prelievo: usata per l'EKFC,
+#' dove il Q pediatrico (2-25 anni) varia sensibilmente nel corso dell'anno
+eta_decimale <- function(data_nascita, data_prelievo) {
+  data_nascita <- come_data(data_nascita); data_prelievo <- come_data(data_prelievo)
+  if (is.na(data_nascita) || is.na(data_prelievo) || data_nascita > data_prelievo) return(NA_real_)
+  as.numeric(data_prelievo - data_nascita) / 365.25
+}
+
 #' BSA secondo Gehan & George (1970), m^2
 bsa_gehan_george <- function(peso_kg, altezza_cm) {
   if (is.na(peso_kg) || is.na(altezza_cm) || peso_kg <= 0 || altezza_cm <= 0) return(NA_real_)
@@ -138,17 +146,34 @@ calcola_mgfr <- function(t0, ore, conc, dose_ug, bsa) {
   list(egfr = egfr, alfa = alfa)
 }
 
-#' EKFC creatinina (Q adulto fisso: 0,90 mg/dL M, 0,70 mg/dL F; valido >= 25 anni)
+#' Q della creatinina EKFC (mg/dL) in funzione di sesso ed et\u00e0.
+#' 2-25 anni: polinomi di Pottel et al. Ann Intern Med 2021 (Q in umol/L,
+#' convertito in mg/dL dividendo per 88,4); > 25 anni: Q adulto fisso
+#' (80 umol/L = 0,90 mg/dL M; 62 umol/L = 0,70 mg/dL F).
+#' Restituisce NA sotto i 2 anni (fuori dal range di validit\u00e0 EKFC).
+ekfc_q_crea <- function(sesso, eta) {
+  if (is.na(eta) || eta < 2) return(NA_real_)
+  if (eta > 25) return(if (sesso == "M") 0.90 else 0.70)
+  ln_q <- if (sesso == "M")
+    3.200 + 0.259 * eta - 0.543 * log(eta) - 0.00763 * eta^2 + 0.0000790 * eta^3
+  else
+    3.080 + 0.177 * eta - 0.223 * log(eta) - 0.00596 * eta^2 + 0.0000686 * eta^3
+  exp(ln_q) / 88.4
+}
+
+#' EKFC creatinina (Q dipendente dall'et\u00e0 per 2-25 anni, Q adulto fisso oltre; valida 2-100 anni)
 ekfc_crea <- function(scr, sesso, eta) {
   if (any(is.na(c(scr, eta))) || is.null(sesso) || !sesso %in% c("M", "F")) return(NULL)
-  q <- if (sesso == "M") 0.90 else 0.70
+  q <- ekfc_q_crea(sesso, eta)
+  if (is.na(q)) return(NULL)
   x <- scr / q; r <- .ekfc_core(x, eta)
   list(q = q, ratio = x, alfa = r$alfa, egfr = r$egfr)
 }
 
-#' EKFC cistatina C (Q = 0,83 mg/L se < 50 anni, 0,83 + 0,005*(eta-50) se >= 50)
+#' EKFC cistatina C (Q = 0,83 mg/L da 2 a < 50 anni, senza differenze di sesso;
+#' 0,83 + 0,005*(eta-50) se >= 50)
 ekfc_cys <- function(scys, eta) {
-  if (any(is.na(c(scys, eta)))) return(NULL)
+  if (any(is.na(c(scys, eta))) || eta < 2) return(NULL)
   q <- if (eta < 50) 0.83 else 0.83 + 0.005 * (eta - 50)
   x <- scys / q; r <- .ekfc_core(x, eta)
   list(q = q, ratio = x, alfa = r$alfa, egfr = r$egfr)
@@ -190,22 +215,39 @@ ckdepi2021_crea_cys <- function(scr, scys, sesso, eta) {
 #'  dose_ug, t0, ore[5], conc[5])
 calcola_tutto <- function(inp) {
   eta <- eta_anni(inp$data_nascita, inp$data_prelievo)
+  eta_dec <- eta_decimale(inp$data_nascita, inp$data_prelievo)
   bsa <- bsa_gehan_george(inp$peso, inp$altezza)
   mg  <- calcola_mgfr(inp$t0, inp$ore, inp$conc, inp$dose_ug, bsa)
-  e_cr  <- if (!is.na(eta)) ekfc_crea(inp$scr, inp$sesso, eta) else NULL
-  e_cys <- if (!is.na(eta)) ekfc_cys(inp$scys, eta) else NULL
+  if (!is.na(eta) && eta < 18)
+    mg$avvisi <- c(mg$avvisi, "Paziente < 18 anni: la correzione di Br\u00f8chner-Mortensen (1972) \u00e8 stata derivata negli adulti; in et\u00e0 pediatrica la mGFR potrebbe essere meno accurata.")
+  # valori di laboratorio <= 0 non validi: esclusi dal calcolo delle eGFR
+  errori_egfr <- character(0)
+  if (isTRUE(inp$scr <= 0)) {
+    errori_egfr <- c(errori_egfr, "Creatinina <= 0 mg/dL: valore non valido, eGFR basate sulla creatinina non calcolate.")
+    inp$scr <- NA_real_
+  }
+  if (isTRUE(inp$scys <= 0)) {
+    errori_egfr <- c(errori_egfr, "Cistatina C <= 0 mg/L: valore non valido, eGFR basate sulla cistatina C non calcolate.")
+    inp$scys <- NA_real_
+  }
+  # EKFC con eta' decimale (Q pediatrico e fattore 0,990^(eta-40))
+  e_cr  <- if (!is.na(eta_dec)) ekfc_crea(inp$scr, inp$sesso, eta_dec) else NULL
+  e_cys <- if (!is.na(eta_dec)) ekfc_cys(inp$scys, eta_dec) else NULL
   avvisi_egfr <- character(0)
-  if (!is.na(eta) && eta < 25)
-    avvisi_egfr <- c(avvisi_egfr, "Et\u00e0 < 25 anni: l'EKFC qui usa il Q adulto fisso; per et\u00e0 < 25 anni EKFC prevede un Q dipendente dall'et\u00e0.")
+  if (!is.na(eta_dec) && eta_dec < 2)
+    avvisi_egfr <- c(avvisi_egfr, "Et\u00e0 < 2 anni: l'equazione EKFC non \u00e8 validata e non viene calcolata.")
+  else if (!is.na(eta_dec) && eta_dec <= 25 && !is.null(e_cr))
+    avvisi_egfr <- c(avvisi_egfr, sprintf("Et\u00e0 \u2264 25 anni: EKFC creatinina calcolata con Q dipendente da et\u00e0 e sesso (Q = %.3f mg/dL).",
+                                          e_cr$q))
   if (!is.na(eta) && eta < 18)
     avvisi_egfr <- c(avvisi_egfr, "Paziente pediatrico: le equazioni CKD-EPI non sono validate sotto i 18 anni.")
   list(
-    eta = eta, bsa = bsa, mgfr = mg,
+    eta = eta, eta_dec = eta_dec, bsa = bsa, mgfr = mg,
     ekfc_cr = e_cr, ekfc_cys = e_cys,
     ekfc_crcys = ekfc_combinata(e_cr, e_cys),
     ckdepi_cr = if (!is.na(eta)) ckdepi2021_crea(inp$scr, inp$sesso, eta) else NA_real_,
     ckdepi_crcys = if (!is.na(eta)) ckdepi2021_crea_cys(inp$scr, inp$scys, inp$sesso, eta) else NA_real_,
-    avvisi_egfr = avvisi_egfr
+    avvisi_egfr = avvisi_egfr, errori_egfr = errori_egfr
   )
 }
 

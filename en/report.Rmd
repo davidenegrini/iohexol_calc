@@ -48,7 +48,7 @@ kab(tr, col.names = c("Method", "Value", "Unit", "KDIGO category"), align = "lrl
 ```
 
 ```{r, results='asis'}
-msg <- c(mg$errors, if (is.na(r$age)) "Age cannot be calculated: enter date of birth and sampling date.",
+msg <- c(mg$errors, r$egfr_errors, if (is.na(r$age)) "Age cannot be calculated: enter date of birth and sampling date.",
          mg$warnings, r$egfr_warnings)
 if (length(msg)) cat(paste0("> **Warning:** ", msg, collapse = "\n>\n"), "\n")
 ```
@@ -101,13 +101,13 @@ ec <- r$ekfc_cr; ey <- r$ekfc_cys
 kab(data.frame(
   Equation = c("EKFC creatinine", "EKFC cystatin C", "EKFC combined",
                "CKD-EPI 2021 creatinine", "CKD-EPI 2021 creatinine + cystatin C"),
-  Input = c(sprintf("Scr %s mg/dL, sex %s, age %s", fmt(inp$scr, 2), txt(inp$sex), fmt(r$age, 0)),
-            sprintf("CysC %s mg/L, age %s", fmt(inp$scys, 2), fmt(r$age, 0)),
+  Input = c(sprintf("Scr %s mg/dL, sex %s, age %s", fmt(inp$scr, 2), txt(inp$sex), fmt(r$age_dec, 2)),
+            sprintf("CysC %s mg/L, age %s", fmt(inp$scys, 2), fmt(r$age_dec, 2)),
             "arithmetic mean of EKFC-cr and EKFC-cys",
             sprintf("Scr %s mg/dL, sex %s, age %s", fmt(inp$scr, 2), txt(inp$sex), fmt(r$age, 0)),
             sprintf("Scr %s mg/dL, CysC %s mg/L, sex %s, age %s", fmt(inp$scr, 2), fmt(inp$scys, 2), txt(inp$sex), fmt(r$age, 0))),
   Parameters = c(
-    if (is.null(ec)) "—" else sprintf("Q = %s; Scr/Q = %s; α = %s", fmt(ec$q, 2), fmt(ec$ratio, 3), fmt(ec$alpha, 3)),
+    if (is.null(ec)) "—" else sprintf("Q = %s; Scr/Q = %s; α = %s", fmt(ec$q, 3), fmt(ec$ratio, 3), fmt(ec$alpha, 3)),
     if (is.null(ey)) "—" else sprintf("Q = %s; CysC/Q = %s; α = %s", fmt(ey$q, 3), fmt(ey$ratio, 3), fmt(ey$alpha, 3)),
     "", "κ = 0.7 (F) / 0.9 (M)", "κ = 0.7 (F) / 0.9 (M); CysC/0.8"),
   `eGFR (mL/min/1.73 m²)` = fmt(c(if (is.null(ec)) NA else ec$egfr, if (is.null(ey)) NA else ey$egfr,
@@ -118,10 +118,12 @@ kab(data.frame(
 ## Methodological notes
 
 - **mGFR**: plasma clearance of iohexol by the *slope-intercept* method (one-compartment model on late samples), corrected with the Brøchner-Mortensen equation (1972) applied to the absolute clearance, with normalisation to 1.73 m² after the correction. BSA according to Gehan & George (1970). Iohexol conversion: µmol/L = mg/L × 1000 / 821.14 (molecular weight 821.14 g/mol).
-- **EKFC**: 107.3 × (X/Q)^α × 0.990^(age−40) [only if age > 40]; α = −0.322 if X/Q < 1, otherwise −1.132. Adult creatinine Q: 0.90 mg/dL (M), 0.70 mg/dL (F); cystatin C Q: 0.83 mg/L (< 50 years), 0.83 + 0.005 × (age − 50) (≥ 50 years). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
+- **EKFC** (decimal age = days / 365.25): 107.3 × (X/Q)^α × 0.990^(age−40) [only if age > 40]; α = −0.322 if X/Q < 1, otherwise −1.132. Creatinine Q: 2–25 years ln(Q [µmol/L]) = 3.200 + 0.259·age − 0.543·ln(age) − 0.00763·age² + 0.0000790·age³ (M) and 3.080 + 0.177·age − 0.223·ln(age) − 0.00596·age² + 0.0000686·age³ (F), converted to mg/dL (÷ 88.4); > 25 years 0.90 mg/dL (M), 0.70 mg/dL (F); cystatin C Q: 0.83 mg/L (2–< 50 years), 0.83 + 0.005 × (age − 50) (≥ 50 years). Pottel et al., *Ann Intern Med* 2021; *N Engl J Med* 2023.
 - **CKD-EPI 2021** (without race coefficient): Inker et al., *N Engl J Med* 2021.
 - IDMS-traceable creatinine; cystatin C traceable to the IFCC standard (ERM-DA471/IFCC).
 
 ---
 
 > **Disclaimer.** Calculation tool for support and research purposes: it is not a CE-marked medical device (EU Regulation 2017/745). Results must be verified and interpreted by qualified personnel.
+
+<small>Report generated with *iohexol_calc* – source code, documentation and licence (GNU AGPL v3): <https://github.com/davidenegrini/iohexol_calc></small>
