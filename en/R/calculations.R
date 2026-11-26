@@ -238,9 +238,9 @@ calc_all <- function(inp) {
   egfr_warnings <- character(0)
   if (!is.na(age_dec) && age_dec < 2)
     egfr_warnings <- c(egfr_warnings, "Age < 2 years: the EKFC equation is not validated and is not calculated.")
-  else if (!is.na(age_dec) && age_dec <= 25)
+  else if (!is.na(age_dec) && age_dec <= 25 && !is.null(e_cr))
     egfr_warnings <- c(egfr_warnings, sprintf("Age \u2264 25 years: EKFC creatinine calculated with age- and sex-dependent Q (Q = %.3f mg/dL).",
-                                              if (is.null(e_cr)) NA_real_ else e_cr$q))
+                                              e_cr$q))
   if (!is.na(age) && age < 18)
     egfr_warnings <- c(egfr_warnings, "Paediatric patient: the CKD-EPI equations are not validated below 18 years.")
   list(

@@ -236,9 +236,9 @@ calcola_tutto <- function(inp) {
   avvisi_egfr <- character(0)
   if (!is.na(eta_dec) && eta_dec < 2)
     avvisi_egfr <- c(avvisi_egfr, "Et\u00e0 < 2 anni: l'equazione EKFC non \u00e8 validata e non viene calcolata.")
-  else if (!is.na(eta_dec) && eta_dec <= 25)
+  else if (!is.na(eta_dec) && eta_dec <= 25 && !is.null(e_cr))
     avvisi_egfr <- c(avvisi_egfr, sprintf("Et\u00e0 \u2264 25 anni: EKFC creatinina calcolata con Q dipendente da et\u00e0 e sesso (Q = %.3f mg/dL).",
-                                          if (is.null(e_cr)) NA_real_ else e_cr$q))
+                                          e_cr$q))
   if (!is.na(eta) && eta < 18)
     avvisi_egfr <- c(avvisi_egfr, "Paziente pediatrico: le equazioni CKD-EPI non sono validate sotto i 18 anni.")
   list(
