@@ -124,3 +124,5 @@ kab(data.frame(
 ---
 
 > **Avvertenza.** Strumento di calcolo a scopo di supporto e ricerca: non è un dispositivo medico marcato CE (Regolamento UE 2017/745). I risultati devono essere verificati e interpretati da personale qualificato.
+
+<small>Report generato con *iohexol_calc* – codice sorgente, documentazione e licenza (GNU AGPL v3): <https://github.com/davidenegrini/iohexol_calc></small>

@@ -125,3 +125,5 @@ kab(data.frame(
 ---
 
 > **Disclaimer.** Calculation tool for support and research purposes: it is not a CE-marked medical device (EU Regulation 2017/745). Results must be verified and interpreted by qualified personnel.
+
+<small>Report generated with *iohexol_calc* – source code, documentation and licence (GNU AGPL v3): <https://github.com/davidenegrini/iohexol_calc></small>
